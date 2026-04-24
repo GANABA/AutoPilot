@@ -5,10 +5,13 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, pool
 from alembic import context
 
-# Charge backend/.env quel que soit le dossier courant
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", "backend", ".env"))
+# Charge backend/.env en local (ignoré si inexistant — ex: Railway utilise des vars d'env)
+_env_path = os.path.join(os.path.dirname(__file__), "..", "backend", ".env")
+load_dotenv(_env_path)
 
+# Ajoute backend/ (local) ET le dossier parent (Docker /app/) au sys.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from config import get_settings
 from database import Base
@@ -35,8 +38,6 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    # create_engine directement pour éviter le parsing configparser
-    # qui interprète % comme un caractère d'interpolation
     connectable = create_engine(settings.database_url, poolclass=pool.NullPool)
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
