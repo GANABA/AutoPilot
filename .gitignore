@@ -1,0 +1,33 @@
+# Env
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+
+# Node
+node_modules/
+.next/
+frontend/dist/
+frontend/build/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+*.log
+
+# Credentials
+credentials.json
+*.pem
+*.key
