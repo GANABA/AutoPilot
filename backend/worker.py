@@ -1,3 +1,4 @@
+import time
 from celery import Celery
 from config import get_settings
 
@@ -20,30 +21,54 @@ celery_app.conf.update(
 
 @celery_app.task(name="analyze_document")
 def analyze_document_task(document_id: str):
-    """Placeholder — sera remplacé par l'Agent Analyste (semaine 3)."""
     from database import SessionLocal
-    from models import Document
+    from models import Document, Property
+    from services.storage import download_file
+    from services.analyzer import analyze
 
     db = SessionLocal()
+    doc = None
+    start = time.time()
     try:
         doc = db.get(Document, document_id)
+        if not doc:
+            return
+
+        doc.status = "processing"
+        db.commit()
+
+        pdf_bytes = download_file(doc.file_url)
+        result = analyze(pdf_bytes)
+
+        doc.doc_type = result["doc_type"]
+        doc.extracted_data = {"confidence": result["confidence"], **result["data"]}
+        doc.status = "done"
+
+        # Auto-enrichit le bien associé si c'est un DPE
+        if result["doc_type"] == "dpe" and doc.property_id and result["data"].get("energy_class"):
+            prop = db.get(Property, doc.property_id)
+            if prop:
+                prop.energy_class = result["data"]["energy_class"]
+
+        db.commit()
+
+    except Exception as e:
         if doc:
-            doc.status = "processing"
+            doc.status = "error"
+            doc.extracted_data = {"error": str(e)}
             db.commit()
-            # TODO: Agent Analyste
-            doc.status = "done"
-            db.commit()
+        raise
     finally:
         db.close()
 
 
 @celery_app.task(name="generate_listings")
 def generate_listings_task(property_id: str):
-    """Placeholder — sera remplacé par l'Agent Rédacteur (semaine 4)."""
+    """Placeholder — Agent Rédacteur (semaine 4)."""
     pass
 
 
 @celery_app.task(name="send_followup")
 def send_followup_task(lead_id: str):
-    """Placeholder — sera remplacé par les relances automatiques (semaine 18)."""
+    """Placeholder — relances automatiques (semaine 6)."""
     pass

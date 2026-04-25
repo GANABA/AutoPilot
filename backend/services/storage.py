@@ -21,6 +21,13 @@ def _get_client():
     return _client
 
 
+def download_file(file_url: str) -> bytes:
+    key = file_url.split(f"/{settings.cloudflare_r2_bucket}/", 1)[-1]
+    client = _get_client()
+    response = client.get_object(Bucket=settings.cloudflare_r2_bucket, Key=key)
+    return response["Body"].read()
+
+
 async def upload_file(content: bytes, key: str, content_type: str) -> str:
     client = _get_client()
     client.put_object(
