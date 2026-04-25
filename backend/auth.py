@@ -1,12 +1,11 @@
+import secrets
 from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from config import get_settings
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer_scheme = HTTPBearer()
 
 
@@ -26,6 +25,6 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_sche
 def login(email: str, password: str) -> str:
     if email != settings.admin_email:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identifiants incorrects")
-    if not pwd_context.verify(password, pwd_context.hash(settings.admin_password)):
+    if not secrets.compare_digest(password, settings.admin_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identifiants incorrects")
     return create_access_token({"sub": email, "role": "admin"})
