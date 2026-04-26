@@ -1,5 +1,5 @@
 from uuid import UUID, uuid4
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Document, Property
@@ -24,6 +24,7 @@ router = APIRouter(prefix="/api/documents", tags=["documents"])
     ),
 )
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(..., description="Fichier PDF (DPE, mandat de vente, PV de copropriété...)"),
     property_id: str | None = Form(None, description="UUID du bien à associer (optionnel — laisser vide si aucun)"),
     db: Session = Depends(get_db),
@@ -58,7 +59,7 @@ async def upload_document(
     db.commit()
     db.refresh(doc)
 
-    analyze_document_task.delay(str(doc.id))
+    background_tasks.add_task(analyze_document_task, str(doc.id))
 
     return doc
 
