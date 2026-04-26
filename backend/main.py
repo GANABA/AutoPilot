@@ -9,6 +9,7 @@ from schemas import LoginRequest, TokenResponse
 from api.properties import router as properties_router
 from api.leads import router as leads_router
 from api.documents import router as documents_router
+from api.listings import router as listings_router
 import redis as redis_lib
 
 settings = get_settings()
@@ -39,6 +40,7 @@ API backend du POC AutoPilot Immo — plateforme multi-agents pour agences immob
         {"name": "properties", "description": "CRUD biens immobiliers"},
         {"name": "leads", "description": "CRUD prospects"},
         {"name": "documents", "description": "Upload PDF + analyse Agent Analyste"},
+        {"name": "listings", "description": "Annonces générées par l'Agent Rédacteur (SeLoger, Leboncoin, PAP, site web)"},
         {"name": "system", "description": "Health check"},
     ],
 )
@@ -54,6 +56,7 @@ app.add_middleware(
 app.include_router(properties_router)
 app.include_router(leads_router)
 app.include_router(documents_router)
+app.include_router(listings_router)
 
 
 @app.exception_handler(Exception)

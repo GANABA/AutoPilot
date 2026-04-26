@@ -69,8 +69,62 @@ def analyze_document_task(document_id: str):
 
 @celery_app.task(name="generate_listings")
 def generate_listings_task(property_id: str):
-    """Placeholder — Agent Rédacteur (semaine 4)."""
-    pass
+    from database import SessionLocal
+    from models import Property, Listing
+    from services.writer import generate_listing
+    from sqlalchemy import select, delete
+
+    db = SessionLocal()
+    try:
+        prop = db.get(Property, property_id)
+        if not prop:
+            return
+
+        property_data = {
+            "type": prop.type,
+            "title": prop.title,
+            "description": prop.description,
+            "price": prop.price,
+            "surface": prop.surface,
+            "nb_rooms": prop.nb_rooms,
+            "nb_bedrooms": prop.nb_bedrooms,
+            "city": prop.city,
+            "zipcode": prop.zipcode,
+            "address": prop.address,
+            "floor": prop.floor,
+            "has_balcony": prop.has_balcony,
+            "has_parking": prop.has_parking,
+            "has_elevator": prop.has_elevator,
+            "energy_class": prop.energy_class,
+            "charges_monthly": prop.charges_monthly,
+        }
+
+        # Supprime les anciens brouillons pour ce bien
+        db.execute(
+            delete(Listing).where(
+                Listing.property_id == prop.id,
+                Listing.status == "draft",
+            )
+        )
+        db.flush()
+
+        for platform in ["seloger", "leboncoin", "pap", "website"]:
+            result = generate_listing(property_data, platform)
+            db.add(Listing(
+                property_id=prop.id,
+                platform=platform,
+                title=result["title"],
+                content=result["content"],
+                status="draft",
+            ))
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 
 @celery_app.task(name="send_followup")
