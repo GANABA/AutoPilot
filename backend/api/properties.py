@@ -10,7 +10,7 @@ from auth import verify_token
 router = APIRouter(prefix="/api/properties", tags=["properties"])
 
 
-@router.post("", response_model=PropertyResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=PropertyResponse, status_code=status.HTTP_201_CREATED, summary="Créer un bien")
 def create_property(body: PropertyCreate, db: Session = Depends(get_db), _=Depends(verify_token)):
     prop = Property(**body.model_dump(exclude={"metadata_"}), metadata_=body.metadata_)
     db.add(prop)
@@ -19,7 +19,7 @@ def create_property(body: PropertyCreate, db: Session = Depends(get_db), _=Depen
     return prop
 
 
-@router.get("", response_model=list[PropertyResponse])
+@router.get("", response_model=list[PropertyResponse], summary="Lister les biens")
 def list_properties(
     status: str | None = None,
     city: str | None = None,
@@ -35,7 +35,7 @@ def list_properties(
     return db.execute(q).scalars().all()
 
 
-@router.get("/{property_id}", response_model=PropertyResponse)
+@router.get("/{property_id}", response_model=PropertyResponse, summary="Récupérer un bien")
 def get_property(property_id: UUID, db: Session = Depends(get_db), _=Depends(verify_token)):
     prop = db.get(Property, property_id)
     if not prop:
@@ -43,7 +43,7 @@ def get_property(property_id: UUID, db: Session = Depends(get_db), _=Depends(ver
     return prop
 
 
-@router.put("/{property_id}", response_model=PropertyResponse)
+@router.put("/{property_id}", response_model=PropertyResponse, summary="Modifier un bien")
 def update_property(property_id: UUID, body: PropertyUpdate, db: Session = Depends(get_db), _=Depends(verify_token)):
     prop = db.get(Property, property_id)
     if not prop:
@@ -55,7 +55,7 @@ def update_property(property_id: UUID, body: PropertyUpdate, db: Session = Depen
     return prop
 
 
-@router.delete("/{property_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{property_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Supprimer un bien")
 def delete_property(property_id: UUID, db: Session = Depends(get_db), _=Depends(verify_token)):
     prop = db.get(Property, property_id)
     if not prop:

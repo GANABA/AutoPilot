@@ -9,6 +9,12 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {"email": "admin@immoplus.fr", "password": "MotDePasseSecurise123!"}
+        }
+    }
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -39,6 +45,32 @@ class PropertyCreate(BaseModel):
     agent_email: str | None = None
     metadata_: dict = {}
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "reference": "APT-001",
+                "type": "appartement",
+                "title": "Beau T3 avec balcon — Lyon 6e",
+                "description": "Appartement lumineux de 68m² au 3e étage avec balcon plein sud.",
+                "price": 285000,
+                "surface": 68,
+                "nb_rooms": 3,
+                "nb_bedrooms": 2,
+                "city": "Lyon",
+                "zipcode": "69006",
+                "address": "12 rue de Sèze",
+                "floor": 3,
+                "has_balcony": True,
+                "has_parking": False,
+                "has_elevator": True,
+                "energy_class": "C",
+                "charges_monthly": 180,
+                "agent_name": "Sophie Martin",
+                "agent_email": "s.martin@immoplus.fr",
+            }
+        }
+    }
+
 class PropertyUpdate(PropertyCreate):
     status: str | None = None
 
@@ -61,6 +93,19 @@ class LeadCreate(BaseModel):
     source: str | None = None
     gdpr_consent: bool = False
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "name": "Jean Dupont",
+                "email": "jean.dupont@email.fr",
+                "phone": "0612345678",
+                "criteria": {"budget_max": 300000, "surface_min": 60, "city": "Lyon"},
+                "source": "chatbot",
+                "gdpr_consent": True,
+            }
+        }
+    }
+
 class LeadResponse(LeadCreate):
     id: UUID
     score: int
@@ -78,6 +123,7 @@ class DocumentResponse(BaseModel):
     filename: str
     file_url: str
     doc_type: str | None
+    extracted_data: dict | None = None
     status: str
     created_at: datetime
 

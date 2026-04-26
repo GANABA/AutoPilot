@@ -11,10 +11,21 @@ from worker import analyze_document_task
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
 
-@router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=DocumentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Uploader un PDF",
+    description=(
+        "Upload un fichier PDF et déclenche l'**Agent Analyste** en arrière-plan.\n\n"
+        "Le document passe par les statuts : `pending` → `processing` → `done` (ou `error`).\n\n"
+        "Interroge **GET /{document_id}** pour récupérer le résultat une fois `status=done`. "
+        "Le champ `extracted_data` contiendra les données extraites (classe DPE, prix du mandat, etc.)."
+    ),
+)
 async def upload_document(
-    file: UploadFile = File(...),
-    property_id: UUID | None = Form(None),
+    file: UploadFile = File(..., description="Fichier PDF (DPE, mandat de vente, PV de copropriété...)"),
+    property_id: UUID | None = Form(None, description="UUID du bien à associer (optionnel)"),
     db: Session = Depends(get_db),
     _=Depends(verify_token),
 ):
@@ -38,7 +49,12 @@ async def upload_document(
     return doc
 
 
-@router.get("/{document_id}", response_model=DocumentResponse)
+@router.get(
+    "/{document_id}",
+    response_model=DocumentResponse,
+    summary="Résultat de l'analyse",
+    description="Retourne le document et le champ `extracted_data` une fois `status=done`.",
+)
 def get_document(document_id: UUID, db: Session = Depends(get_db), _=Depends(verify_token)):
     doc = db.get(Document, document_id)
     if not doc:

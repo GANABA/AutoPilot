@@ -14,8 +14,31 @@ settings = get_settings()
 app = FastAPI(
     title="AutoPilot Immo — POC",
     version="0.1.0",
+    description="""
+API backend du POC AutoPilot Immo — plateforme multi-agents pour agences immobilières.
+
+## Authentification
+1. **POST /api/auth/login** → récupère le `access_token`
+2. Clique sur **Authorize** 🔒 (en haut à droite) et colle : `Bearer <token>`
+3. Le token persiste entre les rechargements de page
+
+## Agents
+- **Agent Analyste** : upload un PDF → classification automatique (DPE / mandat / PV copro) + extraction structurée via GPT-4o-mini
+""",
     docs_url="/docs",
-    redoc_url=None,
+    redoc_url="/redoc",
+    swagger_ui_parameters={
+        "persistAuthorization": True,
+        "defaultModelsExpandDepth": -1,
+        "tryItOutEnabled": True,
+    },
+    openapi_tags=[
+        {"name": "auth", "description": "Login et vérification du token JWT"},
+        {"name": "properties", "description": "CRUD biens immobiliers"},
+        {"name": "leads", "description": "CRUD prospects"},
+        {"name": "documents", "description": "Upload PDF + analyse Agent Analyste"},
+        {"name": "system", "description": "Health check"},
+    ],
 )
 
 app.add_middleware(
@@ -51,12 +74,22 @@ def health_check():
     }
 
 
-@app.post("/api/auth/login", response_model=TokenResponse, tags=["auth"])
+@app.post(
+    "/api/auth/login",
+    response_model=TokenResponse,
+    tags=["auth"],
+    summary="Connexion admin",
+    description="Retourne un JWT valide 24h. Utilise le token dans **Authorize** 🔒 pour les autres endpoints.",
+)
 def auth_login(body: LoginRequest):
     token = login(body.email, body.password)
     return TokenResponse(access_token=token)
 
 
-@app.get("/api/auth/me", tags=["auth"])
+@app.get(
+    "/api/auth/me",
+    tags=["auth"],
+    summary="Profil du token courant",
+)
 def auth_me(payload: dict = Depends(verify_token)):
     return {"email": payload.get("sub"), "role": payload.get("role")}
