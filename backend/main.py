@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Depends
+import traceback
+from fastapi import FastAPI, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from config import get_settings
 from database import check_db_connection
@@ -52,6 +54,14 @@ app.add_middleware(
 app.include_router(properties_router)
 app.include_router(leads_router)
 app.include_router(documents_router)
+
+
+@app.exception_handler(Exception)
+async def debug_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"error": type(exc).__name__, "detail": str(exc), "trace": traceback.format_exc()},
+    )
 
 
 @app.get("/health", tags=["system"])
