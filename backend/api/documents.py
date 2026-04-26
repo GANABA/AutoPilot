@@ -25,12 +25,18 @@ router = APIRouter(prefix="/api/documents", tags=["documents"])
 )
 async def upload_document(
     file: UploadFile = File(..., description="Fichier PDF (DPE, mandat de vente, PV de copropriété...)"),
-    property_id: UUID | None = Form(None, description="UUID du bien à associer (optionnel — laisser vide si aucun)"),
+    property_id: str | None = Form(None, description="UUID du bien à associer (optionnel — laisser vide si aucun)"),
     db: Session = Depends(get_db),
     _=Depends(verify_token),
 ):
-    if property_id and not db.get(Property, property_id):
-        raise HTTPException(status_code=404, detail=f"Bien {property_id} introuvable")
+    pid: UUID | None = None
+    if property_id:
+        try:
+            pid = UUID(property_id)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="property_id n'est pas un UUID valide")
+        if not db.get(Property, pid):
+            raise HTTPException(status_code=404, detail=f"Bien {pid} introuvable")
 
     content = await file.read()
     if not content:
@@ -43,7 +49,7 @@ async def upload_document(
         raise HTTPException(status_code=502, detail=f"Erreur upload R2 : {e}")
 
     doc = Document(
-        property_id=property_id,
+        property_id=pid,
         filename=file.filename,
         file_url=file_url,
         status="pending",
