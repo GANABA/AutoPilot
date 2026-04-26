@@ -1,21 +1,23 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from database import get_db
 from models import Property
 from schemas import PropertyCreate, PropertyUpdate, PropertyResponse
 from auth import verify_token
+from services.embeddings import embed_property_bg
 
 router = APIRouter(prefix="/api/properties", tags=["properties"])
 
 
 @router.post("", response_model=PropertyResponse, status_code=status.HTTP_201_CREATED, summary="Créer un bien")
-def create_property(body: PropertyCreate, db: Session = Depends(get_db), _=Depends(verify_token)):
+def create_property(body: PropertyCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), _=Depends(verify_token)):
     prop = Property(**body.model_dump(exclude={"metadata_"}), metadata_=body.metadata_)
     db.add(prop)
     db.commit()
     db.refresh(prop)
+    background_tasks.add_task(embed_property_bg, str(prop.id))
     return prop
 
 
@@ -44,7 +46,7 @@ def get_property(property_id: UUID, db: Session = Depends(get_db), _=Depends(ver
 
 
 @router.put("/{property_id}", response_model=PropertyResponse, summary="Modifier un bien")
-def update_property(property_id: UUID, body: PropertyUpdate, db: Session = Depends(get_db), _=Depends(verify_token)):
+def update_property(property_id: UUID, body: PropertyUpdate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), _=Depends(verify_token)):
     prop = db.get(Property, property_id)
     if not prop:
         raise HTTPException(status_code=404, detail="Bien introuvable")
@@ -52,6 +54,7 @@ def update_property(property_id: UUID, body: PropertyUpdate, db: Session = Depen
         setattr(prop, field, value)
     db.commit()
     db.refresh(prop)
+    background_tasks.add_task(embed_property_bg, str(prop.id))
     return prop
 
 

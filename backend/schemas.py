@@ -130,6 +130,39 @@ class DocumentResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Chat ──────────────────────────────────────────────────────────────────────
+
+class ChatRequest(BaseModel):
+    message: str
+    conversation_id: UUID | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {"message": "Bonjour, je cherche un T3 à Lyon avec balcon, budget 300 000 €"}
+        }
+    }
+
+class ChatResponse(BaseModel):
+    reply: str
+    conversation_id: UUID
+    suggested_property_ids: list[str] = []
+
+class MessageDetail(BaseModel):
+    role: str
+    content: str
+    created_at: datetime
+
+class ConversationDetail(BaseModel):
+    id: UUID
+    channel: str
+    status: str
+    lead_id: UUID | None = None
+    created_at: datetime
+    messages: list[MessageDetail] = []
+
+    model_config = {"from_attributes": True}
+
+
 # ── Listing ───────────────────────────────────────────────────────────────────
 
 class ListingResponse(BaseModel):
